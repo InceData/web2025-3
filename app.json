@@ -1,0 +1,50 @@
+const fs = require('fs');
+const commander = require('commander');
+const program = new commander.Command();
+
+// Настроим параметры командной строки
+program
+  .requiredOption('-i, --input <file>', 'путь к файлу для чтения (обязательный параметр)')  // Обязательный параметр
+  .option('-o, --output <file>', 'путь к файлу для записи результата (необязательный параметр)')
+  .option('-d, --display', 'вывести результат в консоль (необязательный параметр)')
+  .parse(process.argv);
+
+// Получаем значения параметров
+const options = program.opts();
+
+// Если не задан обязательный параметр -i
+if (!options.input) {
+  console.error('Please, specify input file');
+  process.exit(1);
+}
+
+// Чтение файла
+let jsonData;
+try {
+  const data = fs.readFileSync(options.input, 'utf8');
+  jsonData = JSON.parse(data);  // Преобразуем данные из JSON
+} catch (err) {
+  console.error('Cannot find input file');
+  process.exit(1);
+}
+
+// Обработка данных
+if (jsonData && jsonData.exchangeRates) {
+  const exchangeRates = jsonData.exchangeRates;
+
+  // Форматируем данные в нужный формат <дата>:<курс>
+  const result = exchangeRates.map(rate => `${rate.date}:${rate.rate}`).join('\n');
+
+  // Вывод в консоль, если задан параметр -d
+  if (options.display) {
+    console.log(result);
+  }
+
+  // Запись в файл, если задан параметр -o
+  if (options.output) {
+    fs.writeFileSync(options.output, result);
+  }
+} else {
+  console.error('Invalid data format or missing exchangeRates');
+  process.exit(1);
+}
